@@ -3,9 +3,22 @@ import styled from '@emotion/styled'
 
 const StyledInput = styled.input({
   height: 50,
+  width: '100%',
   background: 'transparent',
+  border: 0,
   fontSize: 48,
-  textAlign: 'right'
+  textAlign: 'right',
+  '::-webkit-outer-spin-button': {
+    '-webkit-appearance': 'none'
+  },
+  '::-webkit-inner-spin-button': {
+    '-webkit-appearance': 'none'
+  },
+
+  ':focus': {
+    border: 0,
+    outline: 'none'
+  }
 })
 
 type InputProps = InputHTMLAttributes<HTMLInputElement>

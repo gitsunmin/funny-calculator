@@ -3,15 +3,17 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+import { WINDOW_SIZE } from './../data'
+
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 225,
-    height: 325,
+    width: WINDOW_SIZE.WIDTH,
+    height: WINDOW_SIZE.HEIGHT,
     resizable: false,
     show: true,
     center: true,
-    backgroundColor: 'transparent',
+    transparent: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
