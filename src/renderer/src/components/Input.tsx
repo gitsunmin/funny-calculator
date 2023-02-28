@@ -5,9 +5,11 @@ const StyledInput = styled.input({
   height: 50,
   width: '100%',
   background: 'transparent',
+  color: 'white',
   border: 0,
   fontSize: 48,
   textAlign: 'right',
+  caretColor: 'transparent',
   '::-webkit-outer-spin-button': {
     '-webkit-appearance': 'none'
   },
