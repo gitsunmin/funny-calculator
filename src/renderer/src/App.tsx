@@ -49,10 +49,10 @@ function App(): JSX.Element {
         <Grid container flexGrow={3} flexDirection={'column'} gap={1}>
           <Grid container flexGrow={1} gap={1}>
             <Grid flexGrow={2.5}>
-              <Button>C</Button>
+              <Button style={{ background: 'dimgray' }}>C</Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>%</Button>
+              <Button style={{ background: 'dimgray' }}>%</Button>
             </Grid>
           </Grid>
           <Grid container flexGrow={1} gap={1}>
@@ -119,27 +119,27 @@ function App(): JSX.Element {
         </Grid>
         <Grid container flexGrow={1} flexDirection={'column'} gap={1}>
           <Grid flexGrow={1}>
-            <Button>
+            <Button style={{ background: 'darkorange' }}>
               <RiDivideFill size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button>
+            <Button style={{ background: 'darkorange' }}>
               <RxCross2 size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button>
+            <Button style={{ background: 'darkorange' }}>
               <AiOutlineMinus size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button>
+            <Button style={{ background: 'darkorange' }}>
               <AiOutlinePlus size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button>
+            <Button style={{ background: 'darkorange' }}>
               <TbEqual size="22" />
             </Button>
           </Grid>

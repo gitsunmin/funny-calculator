@@ -16,6 +16,10 @@ const StyledInput = styled.input({
   '::-webkit-inner-spin-button': {
     '-webkit-appearance': 'none'
   },
+  '-webkit-user-select': 'all',
+  '-moz-user-select': 'all',
+  '-ms-user-select': 'all',
+  userSelect: 'all',
 
   ':focus': {
     border: 0,
