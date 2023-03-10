@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import Input from '@renderer/components/Input'
 import Button from '@renderer/components/Button'
 import Grid from '@renderer/components/layouts/Grid'
 
 import { RiDivideFill } from 'react-icons/ri'
-import { RxCross2, RxHeight } from 'react-icons/rx'
+import { RxCross2 } from 'react-icons/rx'
 import { AiOutlineMinus } from 'react-icons/ai'
 import { AiOutlinePlus } from 'react-icons/ai'
 import {
@@ -23,11 +24,21 @@ import {
 import { WINDOW_SIZE } from './../../data'
 
 import Container from '@renderer/components/layouts/container'
+import { useClickButton } from '@renderer/hooks'
+import { useState } from 'react'
 
 function App(): JSX.Element {
   const BUTTON_PAD_SIZE = {
     height: WINDOW_SIZE.HEIGHT - 54 - 24,
     width: WINDOW_SIZE.WIDTH
+  }
+
+  const [value, setValue] = useState('')
+
+  const onCalculate = useClickButton()
+
+  const onClickButton = (buttenTyle: ButtonType): void => {
+    setValue(onCalculate(buttenTyle, value))
   }
 
   return (
@@ -38,108 +49,195 @@ function App(): JSX.Element {
         }}
       >
         <Input
-          type="number"
+          type="text"
+          readOnly
           style={{
             appearance: 'none',
             margin: 0
           }}
+          value={value}
         />
       </div>
       <Grid container gap={1} style={{ height: BUTTON_PAD_SIZE.height, textAlign: 'center' }}>
         <Grid container flexGrow={3} flexDirection={'column'} gap={1}>
           <Grid container flexGrow={1} gap={1}>
             <Grid flexGrow={2.5}>
-              <Button style={{ background: 'dimgray' }}>C</Button>
+              <Button
+                style={{ background: 'dimgray' }}
+                onClick={() => {
+                  onClickButton('C')
+                }}
+              >
+                C
+              </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button style={{ background: 'dimgray' }}>%</Button>
+              <Button
+                style={{ background: 'dimgray' }}
+                onClick={() => {
+                  onClickButton('%')
+                }}
+              >
+                %
+              </Button>
             </Grid>
           </Grid>
           <Grid container flexGrow={1} gap={1}>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('7')
+                }}
+              >
                 <TbNumber7 size="22" />
               </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('8')
+                }}
+              >
                 <TbNumber8 size="22" />
               </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('9')
+                }}
+              >
                 <TbNumber9 size="22" />
               </Button>
             </Grid>
           </Grid>
           <Grid container flexGrow={1} gap={1}>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('4')
+                }}
+              >
                 <TbNumber4 size="22" />
               </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('5')
+                }}
+              >
                 <TbNumber5 size="22" />
               </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('6')
+                }}
+              >
                 <TbNumber6 size="22" />
               </Button>
             </Grid>
           </Grid>
           <Grid container flexGrow={1} gap={1}>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('1')
+                }}
+              >
                 <TbNumber1 size="22" />
               </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('2')
+                }}
+              >
                 <TbNumber2 size="22" />
               </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('3')
+                }}
+              >
                 <TbNumber3 size="22" />
               </Button>
             </Grid>
           </Grid>
           <Grid container flexGrow={1} gap={1}>
             <Grid style={{ flexGrow: 1.78 }}>
-              <Button>
+              <Button
+                onClick={() => {
+                  onClickButton('0')
+                }}
+              >
                 <TbNumber0 size="22" />
               </Button>
             </Grid>
             <Grid flexGrow={1}>
-              <Button>.</Button>
+              <Button
+                onClick={() => {
+                  onClickButton('.')
+                }}
+              >
+                .
+              </Button>
             </Grid>
           </Grid>
         </Grid>
         <Grid container flexGrow={1} flexDirection={'column'} gap={1}>
           <Grid flexGrow={1}>
-            <Button style={{ background: 'darkorange' }}>
+            <Button
+              style={{ background: 'darkorange' }}
+              onClick={() => {
+                onClickButton('/')
+              }}
+            >
               <RiDivideFill size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button style={{ background: 'darkorange' }}>
+            <Button
+              style={{ background: 'darkorange' }}
+              onClick={() => {
+                onClickButton('*')
+              }}
+            >
               <RxCross2 size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button style={{ background: 'darkorange' }}>
+            <Button
+              style={{ background: 'darkorange' }}
+              onClick={() => {
+                onClickButton('-')
+              }}
+            >
               <AiOutlineMinus size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button style={{ background: 'darkorange' }}>
+            <Button
+              style={{ background: 'darkorange' }}
+              onClick={() => {
+                onClickButton('+')
+              }}
+            >
               <AiOutlinePlus size="22" />
             </Button>
           </Grid>
           <Grid flexGrow={1}>
-            <Button style={{ background: 'darkorange' }}>
+            <Button
+              style={{ background: 'darkorange' }}
+              onClick={() => {
+                onClickButton('=')
+              }}
+            >
               <TbEqual size="22" />
             </Button>
           </Grid>
