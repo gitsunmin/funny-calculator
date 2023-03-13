@@ -1,7 +1,6 @@
-import { FC, InputHTMLAttributes } from 'react'
 import styled from '@emotion/styled'
 
-const StyledInput = styled.input({
+const Input = styled.input({
   height: 50,
   width: '100%',
   background: 'transparent',
@@ -26,15 +25,5 @@ const StyledInput = styled.input({
     outline: 'none'
   }
 })
-
-type InputProps = InputHTMLAttributes<HTMLInputElement>
-
-const Input: FC<InputProps> = (props) => {
-  return (
-    <>
-      <StyledInput {...props} />
-    </>
-  )
-}
 
 export default Input

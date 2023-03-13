@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
+import { useRef } from 'react'
+
 import Input from '@renderer/components/Input'
 import Button from '@renderer/components/Button'
 import Grid from '@renderer/components/layouts/Grid'
@@ -24,8 +26,7 @@ import {
 import { WINDOW_SIZE } from './../../data'
 
 import Container from '@renderer/components/layouts/container'
-import { useClickButton } from '@renderer/hooks'
-import { useState } from 'react'
+import { useCalculator } from '@renderer/hooks'
 
 function App(): JSX.Element {
   const BUTTON_PAD_SIZE = {
@@ -33,12 +34,20 @@ function App(): JSX.Element {
     width: WINDOW_SIZE.WIDTH
   }
 
-  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const onCalculate = useClickButton()
+  const calculator = useCalculator()
 
+  /** 버튼 클릭 시 액션 */
   const onClickButton = (buttenTyle: ButtonType): void => {
-    setValue(onCalculate(buttenTyle, value))
+    if (inputRef !== null && inputRef?.current) {
+      const endIndex = inputRef.current.value.length
+
+      /** 가장 오른쪽에 focus를 옮기기 위한 노력크 */
+      inputRef.current.value = calculator(buttenTyle, inputRef.current.value)
+      inputRef.current.setSelectionRange(endIndex, endIndex)
+      inputRef.current.focus()
+    }
   }
 
   return (
@@ -51,11 +60,11 @@ function App(): JSX.Element {
         <Input
           type="text"
           readOnly
+          ref={inputRef}
           style={{
             appearance: 'none',
             margin: 0
           }}
-          value={value}
         />
       </div>
       <Grid container gap={1} style={{ height: BUTTON_PAD_SIZE.height, textAlign: 'center' }}>
