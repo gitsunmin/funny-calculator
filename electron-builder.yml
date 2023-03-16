@@ -1,4 +1,4 @@
-appId: com.gitsunmin.app
+appId: com.funny-calculator.app
 productName: funny-calculator
 directories:
   buildResources: build
