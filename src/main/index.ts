@@ -10,6 +10,7 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: WINDOW_SIZE.WIDTH,
     height: WINDOW_SIZE.HEIGHT,
+    title: 'funny-calculator',
     resizable: false,
     show: true,
     center: true,
