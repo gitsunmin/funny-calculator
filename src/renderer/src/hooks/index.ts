@@ -115,7 +115,7 @@ const calculate = (outputs: OutputType): string => {
  * * button의 입력을 받아서 액션을 실행하는 함숫
  */
 export const useCalculator = (): ((buttonType: ButtonType, data: string) => string) => {
-  return useCallback((buttonType: ButtonType, data: string): string => {
+  return (buttonType: ButtonType, data: string): string => {
     const addedValue = `${data}${buttonType}`
 
     switch (buttonType) {
@@ -156,5 +156,5 @@ export const useCalculator = (): ((buttonType: ButtonType, data: string) => stri
       default:
         return addedValue
     }
-  }, [])
+  }
 }
