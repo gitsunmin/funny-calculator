@@ -7,5 +7,5 @@ export const compose =
 
 export const pipe =
   <T>(...functions) =>
-  (input: T): number =>
+  (input: T): T =>
     functions.reduce((acc, fn) => fn(acc), input)

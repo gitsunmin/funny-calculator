@@ -1,5 +1,11 @@
-import { useCallback } from 'react'
+import { pipe } from './../utils'
 import Bigjs from 'big.js'
+
+type PipeParams = {
+  input: string
+  outputs: OutputType
+  isValid: boolean
+}
 
 /** 연산자의 우선순위를 정한 MAP. */
 const operatorsPrecedence: Partial<Record<OperatorType, number>> = {
@@ -22,16 +28,21 @@ const LAST_NUMBER_REGEX = /(\d+\.?\d*)$/g
  * * input의 유효성을 검사하는 함수
  * * 마지막에 연산자 및 .이 오는 경우를 검사한다.
  */
-const validator = (input: string): boolean => {
-  return !input.match(INVALIDATED_CASE_REGEX)
+const validator = ({ input, outputs, isValid = true }: PipeParams): PipeParams => {
+  if (input?.match(INVALIDATED_CASE_REGEX)) {
+    throw new Error('Invalidated Case')
+  }
+  return {
+    input,
+    outputs,
+    isValid
+  }
 }
 
 /**
  * 중위 표기법으로 입력된 input을 후위 표기법으로 변환하는 함수
  */
-const converter = (input: string): OutputType => {
-  /** output */
-  const outputs: (ButtonType | number)[] = []
+const converter = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => {
   /** operator stack */
   const operators: OperatorType[] = []
 
@@ -44,7 +55,6 @@ const converter = (input: string): OutputType => {
     const token = convertedInputs[i] as ButtonType
 
     const isNaN = Number.isNaN(Number(token))
-
     if (isNaN) {
       const operatorToken = token as OperatorType
       const nextOperatorPrecedence = operatorsPrecedence[token] ?? 0
@@ -69,10 +79,10 @@ const converter = (input: string): OutputType => {
     lastOperator && outputs.push(lastOperator)
   }
 
-  return outputs
+  return { input, outputs, isValid }
 }
 
-const calculate = (outputs: OutputType): string => {
+const calculate = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => {
   let i = 0
   /** output에 있는 값을 분석하여 알맞는 연산을 수행한다. */
   while (outputs.length > 1) {
@@ -108,7 +118,7 @@ const calculate = (outputs: OutputType): string => {
     }
   }
 
-  return String(outputs.pop())
+  return { input, outputs, isValid }
 }
 
 /**
@@ -116,18 +126,17 @@ const calculate = (outputs: OutputType): string => {
  */
 export const useCalculator = (): ((buttonType: ButtonType, data: string) => string) => {
   return (buttonType: ButtonType, data: string): string => {
-    const addedValue = `${data}${buttonType}`
+    const addedValue = data.concat(buttonType)
 
     switch (buttonType) {
       case '=': {
-        /** validation */
-        if (!validator(data)) return data
+        const { outputs } = pipe<PipeParams>(
+          validator,
+          converter,
+          calculate
+        )({ input: data, outputs: [], isValid: true })
 
-        /** convert */
-        const outputs = converter(data)
-
-        /** calculate */
-        return calculate(outputs)
+        return outputs.pop()?.toString() ?? data
       }
       case '%':
       case '*':
