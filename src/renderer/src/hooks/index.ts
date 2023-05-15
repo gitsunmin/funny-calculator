@@ -1,3 +1,5 @@
+import { match } from 'ts-pattern'
+
 import { pipe } from './../utils'
 import Bigjs from 'big.js'
 
@@ -55,6 +57,7 @@ const converter = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => 
     const token = convertedInputs[i] as ButtonType
 
     const isNaN = Number.isNaN(Number(token))
+
     if (isNaN) {
       const operatorToken = token as OperatorType
       const nextOperatorPrecedence = operatorsPrecedence[token] ?? 0
@@ -113,9 +116,7 @@ const calculate = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => 
           break
       }
       i = 0
-    } else {
-      i++
-    }
+    } else i++
   }
 
   return { input, outputs, isValid }
@@ -128,8 +129,23 @@ export const useCalculator = (): ((buttonType: ButtonType, data: string) => stri
   return (buttonType: ButtonType, data: string): string => {
     const addedValue = data.concat(buttonType)
 
-    switch (buttonType) {
-      case '=': {
+    return match<ButtonType, string>(buttonType)
+      .with('%', '*', '+', '-', '/', () =>
+        data.match(INVALIDATED_CASE_REGEX)
+          ? data.replace(/(\+|-|\*|\/|%)$/g, buttonType)
+          : addedValue
+      )
+      .with('1', '2', '3', '4', '5', '6', '7', '8', '9', () =>
+        data.match(LAST_NUMBER_REGEX)?.pop() === '0' ?? false ? buttonType : addedValue
+      )
+      .with('0', () =>
+        data.match(LAST_NUMBER_REGEX)?.pop()?.at(0) === '0' ?? false ? data : addedValue
+      )
+      .with('.', () =>
+        data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : addedValue
+      )
+      .with('C', () => '')
+      .with('=', () => {
         const { outputs } = pipe<PipeParams>(
           validator,
           converter,
@@ -137,33 +153,7 @@ export const useCalculator = (): ((buttonType: ButtonType, data: string) => stri
         )({ input: data, outputs: [], isValid: true })
 
         return outputs.pop()?.toString() ?? data
-      }
-      case '%':
-      case '*':
-      case '+':
-      case '-':
-      case '/':
-        return data.match(INVALIDATED_CASE_REGEX)
-          ? data.replace(/(\+|-|\*|\/|%)$/g, buttonType)
-          : addedValue
-      case '0':
-        return data.match(LAST_NUMBER_REGEX)?.pop()?.at(0) === '0' ?? false ? data : addedValue
-      case '.':
-        return data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : addedValue
-      case 'C':
-        return ''
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-        return data.match(LAST_NUMBER_REGEX)?.pop() === '0' ?? false ? buttonType : addedValue
-      default:
-        return addedValue
-    }
+      })
+      .otherwise(() => addedValue)
   }
 }
