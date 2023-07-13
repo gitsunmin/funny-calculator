@@ -27,6 +27,7 @@ import { WINDOW_SIZE } from './../../data'
 
 import Container from '@renderer/components/layouts/container'
 import { useCalculator } from '@renderer/hooks'
+import { pipe } from '@mobily/ts-belt'
 
 function App(): JSX.Element {
   const BUTTON_PAD_SIZE = {
@@ -44,7 +45,7 @@ function App(): JSX.Element {
       const endIndex = inputRef.current.value.length
 
       /** 가장 오른쪽에 focus를 옮기기 위한 노력크 */
-      inputRef.current.value = calculator(buttenTyle, inputRef.current.value)
+      inputRef.current.value = pipe(buttenTyle, calculator(inputRef.current.value))
       inputRef.current.setSelectionRange(endIndex, endIndex)
       inputRef.current.focus()
     }

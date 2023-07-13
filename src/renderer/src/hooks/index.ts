@@ -1,13 +1,6 @@
-import { match } from 'ts-pattern'
-
-import { pipe } from './../utils'
+import { match, P } from 'ts-pattern'
+import { A, F, O, flow, pipe } from '@mobily/ts-belt'
 import Bigjs from 'big.js'
-
-type PipeParams = {
-  input: string
-  outputs: OutputType
-  isValid: boolean
-}
 
 /** 연산자의 우선순위를 정한 MAP. */
 const operatorsPrecedence: Partial<Record<OperatorType, number>> = {
@@ -30,25 +23,21 @@ const LAST_NUMBER_REGEX = /(\d+\.?\d*)$/g
  * * input의 유효성을 검사하는 함수
  * * 마지막에 연산자 및 .이 오는 경우를 검사한다.
  */
-const validator = ({ input, outputs, isValid = true }: PipeParams): PipeParams => {
-  if (input?.match(INVALIDATED_CASE_REGEX)) {
-    throw new Error('Invalidated Case')
-  }
-  return {
-    input,
-    outputs,
-    isValid
-  }
-}
+const parseInput =
+  (data: string) =>
+  (input: ButtonType): O.Option<string> =>
+    match(input)
+      .when(() => input?.match(INVALIDATED_CASE_REGEX), F.always(O.None))
+      .otherwise(F.always(O.Some(data)))
 
 /**
  * 중위 표기법으로 입력된 input을 후위 표기법으로 변환하는 함수
  */
-const converter = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => {
+const convert = (input: string): OutputType => {
   /** operator stack */
   const operators: OperatorType[] = []
+  const outputs: OutputType = []
 
-  /** SPLITING */
   const convertedInputs = input.split(OPERATORS_REGEX) as string[]
 
   let i = 0
@@ -67,7 +56,9 @@ const converter = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => 
         operators.push(operatorToken)
       } else {
         const lastOperator = operators.pop()
+        console.log('lastOperator:', lastOperator)
         lastOperator && outputs.push(lastOperator)
+        console.log('outputs:', outputs)
         continue
       }
     } else {
@@ -82,10 +73,10 @@ const converter = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => 
     lastOperator && outputs.push(lastOperator)
   }
 
-  return { input, outputs, isValid }
+  return outputs
 }
 
-const calculate = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => {
+const calculate = (outputs: OutputType): OutputType => {
   let i = 0
   /** output에 있는 값을 분석하여 알맞는 연산을 수행한다. */
   while (outputs.length > 1) {
@@ -119,41 +110,43 @@ const calculate = ({ input, isValid, outputs = [] }: PipeParams): PipeParams => 
     } else i++
   }
 
-  return { input, outputs, isValid }
+  return outputs
 }
 
 /**
  * * button의 입력을 받아서 액션을 실행하는 함숫
  */
-export const useCalculator = (): ((buttonType: ButtonType, data: string) => string) => {
-  return (buttonType: ButtonType, data: string): string => {
-    const addedValue = data.concat(buttonType)
+export const useCalculator = () => {
+  return (data: string) =>
+    (buttonType: ButtonType): string => {
+      const addedValue = data.concat(buttonType)
 
-    return match<ButtonType, string>(buttonType)
-      .with('%', '*', '+', '-', '/', () =>
-        data.match(INVALIDATED_CASE_REGEX)
-          ? data.replace(/(\+|-|\*|\/|%)$/g, buttonType)
-          : addedValue
-      )
-      .with('1', '2', '3', '4', '5', '6', '7', '8', '9', () =>
-        data.match(LAST_NUMBER_REGEX)?.pop() === '0' ?? false ? buttonType : addedValue
-      )
-      .with('0', () =>
-        data.match(LAST_NUMBER_REGEX)?.pop()?.at(0) === '0' ?? false ? data : addedValue
-      )
-      .with('.', () =>
-        data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : addedValue
-      )
-      .with('C', () => '')
-      .with('=', () => {
-        const { outputs } = pipe<PipeParams>(
-          validator,
-          converter,
-          calculate
-        )({ input: data, outputs: [], isValid: true })
-
-        return outputs.pop()?.toString() ?? data
-      })
-      .otherwise(() => addedValue)
-  }
+      return match<ButtonType, string>(buttonType)
+        .with(P.union('%', '*', '+', '-', '/'), () =>
+          data.match(INVALIDATED_CASE_REGEX)
+            ? data.replace(/(\+|-|\*|\/|%)$/g, buttonType)
+            : addedValue
+        )
+        .with(P.union('1', '2', '3', '4', '5', '6', '7', '8', '9'), () =>
+          data.match(LAST_NUMBER_REGEX)?.pop() === '0' ?? false ? buttonType : addedValue
+        )
+        .with('0', () =>
+          data.match(LAST_NUMBER_REGEX)?.pop()?.at(0) === '0' ?? false ? data : addedValue
+        )
+        .with('.', () =>
+          data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : addedValue
+        )
+        .with('C', () => '')
+        .with('=', () =>
+          pipe(
+            buttonType,
+            parseInput(data),
+            O.map(flow(convert, calculate)),
+            O.fromPredicate(A.isNotEmpty),
+            O.map(flow(A.head, String)),
+            O.getWithDefault(data)
+          )
+        )
+        .otherwise(() => addedValue)
+    }
 }

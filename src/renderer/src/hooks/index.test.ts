@@ -1,6 +1,7 @@
 import Big from 'big.js'
 
 import { useCalculator } from '../hooks'
+import { pipe } from '@mobily/ts-belt'
 
 describe('[Calulator]', () => {
   test('Testing Oprator Plus', async () => {
@@ -9,7 +10,7 @@ describe('[Calulator]', () => {
 
     const calulator = useCalculator()
 
-    expect(calulator('=', `${A}+${B}`)).toBe(Big(A).plus(Big(B)).toString())
+    expect(pipe('=', calulator(`${A}+${B}`))).toBe(Big(A).plus(Big(B)).toString())
   })
 
   test('Testing Oprator Divide', async () => {
@@ -18,7 +19,7 @@ describe('[Calulator]', () => {
 
     const calulator = useCalculator()
 
-    expect(calulator('=', `${B}/${A}`)).toBe(Big(B).div(Big(A)).toString())
+    expect(pipe('=', calulator(`${B}/${A}`))).toBe(Big(B).div(Big(A)).toString())
   })
 
   test('Testing Oprator Times', async () => {
@@ -27,7 +28,7 @@ describe('[Calulator]', () => {
 
     const calulator = useCalculator()
 
-    expect(calulator('=', `${B}*${A}`)).toBe(Big(B).times(Big(A)).toString())
+    expect(pipe('=', calulator(`${B}*${A}`))).toBe(Big(B).times(Big(A)).toString())
   })
 
   test('Testing Oprator Times and Divide', async () => {
@@ -37,7 +38,7 @@ describe('[Calulator]', () => {
 
     const calulator = useCalculator()
 
-    expect(calulator('=', `${B}/${A}*${C}`)).toBe(Big(B).div(Big(A)).times(C).toString())
+    expect(pipe('=', calulator(`${B}/${A}*${C}`))).toBe(Big(B).div(Big(A)).times(C).toString())
   })
 
   test('Testing Oprator Times and Divide and Plus(decimal)', async () => {
@@ -47,8 +48,7 @@ describe('[Calulator]', () => {
     const D = 2333.12
 
     const calulator = useCalculator()
-
-    expect(calulator('=', `${B}/${A}*${C}+${D}`)).toBe(
+    expect(pipe('=', calulator(`${B}/${A}*${C}+${D}`))).toBe(
       Big(B).div(Big(A)).times(C).plus(D).toString()
     )
   })
