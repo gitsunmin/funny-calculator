@@ -26,7 +26,7 @@ import {
 import { WINDOW_SIZE } from './../../data'
 
 import Container from '@renderer/components/layouts/container'
-import { useCalculator } from '@renderer/hooks'
+import { handleInput } from '@renderer/utils'
 import { pipe } from '@mobily/ts-belt'
 
 function App(): JSX.Element {
@@ -37,15 +37,13 @@ function App(): JSX.Element {
 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const calculator = useCalculator()
-
   /** 버튼 클릭 시 액션 */
   const onClickButton = (buttenTyle: ButtonType): void => {
     if (inputRef !== null && inputRef?.current) {
       const endIndex = inputRef.current.value.length
 
       /** 가장 오른쪽에 focus를 옮기기 위한 노력크 */
-      inputRef.current.value = pipe(buttenTyle, calculator(inputRef.current.value))
+      inputRef.current.value = pipe(buttenTyle, handleInput(inputRef.current.value))
       inputRef.current.setSelectionRange(endIndex, endIndex)
       inputRef.current.focus()
     }
