@@ -1,4 +1,5 @@
-import { useCallback } from 'react'
+import { match, P } from 'ts-pattern'
+import { A, F, O, flow, pipe } from '@mobily/ts-belt'
 import Bigjs from 'big.js'
 
 /** 연산자의 우선순위를 정한 MAP. */
@@ -18,24 +19,30 @@ const INVALIDATED_CASE_REGEX = /(\+|-|\*|\/|%|\.)$/g
 /** 마지막 숫자를 찾는 정규표현식 */
 const LAST_NUMBER_REGEX = /(\d+\.?\d*)$/g
 
+const matchInvalidatedCase = (input: ButtonType): boolean =>
+  input.match(INVALIDATED_CASE_REGEX) !== null
+
+const alwaysNone = F.always(O.None)
+
 /**
  * * input의 유효성을 검사하는 함수
  * * 마지막에 연산자 및 .이 오는 경우를 검사한다.
  */
-const validator = (input: string): boolean => {
-  return !input.match(INVALIDATED_CASE_REGEX)
-}
+const parseInput =
+  (data: string) =>
+  (input: ButtonType): O.Option<string> =>
+    match(input)
+      .when(matchInvalidatedCase, alwaysNone)
+      .otherwise(F.always(O.Some(data)))
 
 /**
  * 중위 표기법으로 입력된 input을 후위 표기법으로 변환하는 함수
  */
-const converter = (input: string): OutputType => {
-  /** output */
-  const outputs: (ButtonType | number)[] = []
+const convert = (input: string): OutputType => {
   /** operator stack */
   const operators: OperatorType[] = []
+  const outputs: OutputType = []
 
-  /** SPLITING */
   const convertedInputs = input.split(OPERATORS_REGEX) as string[]
 
   let i = 0
@@ -72,7 +79,7 @@ const converter = (input: string): OutputType => {
   return outputs
 }
 
-const calculate = (outputs: OutputType): string => {
+const calculate = (outputs: OutputType): OutputType => {
   let i = 0
   /** output에 있는 값을 분석하여 알맞는 연산을 수행한다. */
   while (outputs.length > 1) {
@@ -103,58 +110,57 @@ const calculate = (outputs: OutputType): string => {
           break
       }
       i = 0
-    } else {
-      i++
-    }
+    } else i++
   }
 
-  return String(outputs.pop())
+  return outputs
 }
+
+const withBasicOperators =
+  (data: string) =>
+  (buttonType: ButtonType): string =>
+    data.match(INVALIDATED_CASE_REGEX)
+      ? data.replace(/(\+|-|\*|\/|%)$/g, buttonType)
+      : data.concat(buttonType)
+
+const withNumber =
+  (data: string) =>
+  (buttonType: ButtonType): string =>
+    data.match(LAST_NUMBER_REGEX)?.pop() === '0' ?? false ? buttonType : data.concat(buttonType)
+
+const withZero =
+  (data: string) =>
+  (buttonType: ButtonType): string =>
+    data.match(LAST_NUMBER_REGEX)?.pop()?.at(0) === '0' ?? false ? data : data.concat(buttonType)
+
+const withDot =
+  (data: string) =>
+  (buttonType: ButtonType): string =>
+    data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : data.concat(buttonType)
+
+const withEqual =
+  (data: string) =>
+  (buttonType: ButtonType): string =>
+    pipe(
+      buttonType,
+      parseInput(data),
+      O.map(flow(convert, calculate)),
+      O.fromPredicate(A.isNotEmpty),
+      O.map(flow(A.head, String)),
+      O.getWithDefault(data)
+    )
 
 /**
  * * button의 입력을 받아서 액션을 실행하는 함숫
  */
-export const useCalculator = (): ((buttonType: ButtonType, data: string) => string) => {
-  return useCallback((buttonType: ButtonType, data: string): string => {
-    const addedValue = `${data}${buttonType}`
-
-    switch (buttonType) {
-      case '=': {
-        /** validation */
-        if (!validator(data)) return data
-
-        /** convert */
-        const outputs = converter(data)
-
-        /** calculate */
-        return calculate(outputs)
-      }
-      case '%':
-      case '*':
-      case '+':
-      case '-':
-      case '/':
-        return data.match(INVALIDATED_CASE_REGEX)
-          ? data.replace(/(\+|-|\*|\/|%)$/g, buttonType)
-          : addedValue
-      case '0':
-        return data.match(LAST_NUMBER_REGEX)?.pop()?.at(0) === '0' ?? false ? data : addedValue
-      case '.':
-        return data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : addedValue
-      case 'C':
-        return ''
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-        return data.match(LAST_NUMBER_REGEX)?.pop() === '0' ?? false ? buttonType : addedValue
-      default:
-        return addedValue
-    }
-  }, [])
-}
+export const handleInput =
+  (data: string) =>
+  (buttonType: ButtonType): string =>
+    match(buttonType)
+      .with(P.union('%', '*', '+', '-', '/'), withBasicOperators(data))
+      .with(P.union('1', '2', '3', '4', '5', '6', '7', '8', '9'), withNumber(data))
+      .with('0', withZero(data))
+      .with('.', withDot(data))
+      .with('=', withEqual(data))
+      .with('C', F.always(''))
+      .otherwise(F.always(data.concat(buttonType)))
