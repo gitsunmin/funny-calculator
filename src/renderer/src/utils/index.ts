@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern'
-import { A, F, O, flow, pipe } from '@mobily/ts-belt'
+import { A, O, S, flow, pipe } from '@mobily/ts-belt'
 import Bigjs from 'big.js'
 
 /** 연산자의 우선순위를 정한 MAP. */
@@ -19,22 +19,6 @@ const INVALIDATED_CASE_REGEX = /(\+|-|\*|\/|%|\.)$/g
 /** 마지막 숫자를 찾는 정규표현식 */
 const LAST_NUMBER_REGEX = /(\d+\.?\d*)$/g
 
-const matchInvalidatedCase = (input: ButtonType): boolean =>
-  input.match(INVALIDATED_CASE_REGEX) !== null
-
-const alwaysNone = F.always(O.None)
-
-/**
- * * input의 유효성을 검사하는 함수
- * * 마지막에 연산자 및 .이 오는 경우를 검사한다.
- */
-const parseInput =
-  (data: string) =>
-  (input: ButtonType): O.Option<string> =>
-    match(input)
-      .when(matchInvalidatedCase, alwaysNone)
-      .otherwise(F.always(O.Some(data)))
-
 /**
  * 중위 표기법으로 입력된 input을 후위 표기법으로 변환하는 함수
  */
@@ -46,7 +30,7 @@ const convert = (input: string): OutputType => {
   const convertedInputs = input.split(OPERATORS_REGEX) as string[]
 
   let i = 0
-  /** 연산자와 피연산자가 구분된 Array의 Loop를 돌려 Output을 채워 넣는다. */
+
   while (convertedInputs.length > i) {
     const token = convertedInputs[i] as ButtonType
 
@@ -87,28 +71,19 @@ const calculate = (outputs: OutputType): OutputType => {
     if (typeof output === 'string') {
       const [leftNumber, rightNumber] = outputs.slice(i - 2, i)
 
-      const leftBigNumber = new Bigjs(leftNumber)
-      const rightBigNumber = new Bigjs(rightNumber)
+      const leftBigNumber = new Bigjs(leftNumber as number)
+      const rightBigNumber = new Bigjs(rightNumber as number)
 
-      switch (output) {
-        case '+':
-          outputs.splice(i - 2, 3, leftBigNumber.plus(rightBigNumber).toNumber())
-          break
-        case '-':
-          outputs.splice(i - 2, 3, leftBigNumber.minus(rightBigNumber).toNumber())
-          break
-        case '*':
-          outputs.splice(i - 2, 3, leftBigNumber.times(rightBigNumber).toNumber())
-          break
-        case '/':
-          outputs.splice(i - 2, 3, leftBigNumber.div(rightBigNumber).toNumber())
-          break
-        case '%':
-          outputs.splice(i - 2, 3, leftBigNumber.mod(rightBigNumber).toNumber())
-          break
-        default:
-          break
-      }
+      const calculate = match(output)
+        .with('+', () => leftBigNumber.plus(rightBigNumber).toNumber())
+        .with('-', () => leftBigNumber.minus(rightBigNumber).toNumber())
+        .with('*', () => leftBigNumber.times(rightBigNumber).toNumber())
+        .with('/', () => leftBigNumber.div(rightBigNumber).toNumber())
+        .with('%', () => leftBigNumber.mod(rightBigNumber).toNumber())
+        .otherwise(() => new Bigjs(0).toNumber())
+
+      outputs.splice(i - 2, 3, calculate)
+
       i = 0
     } else i++
   }
@@ -138,17 +113,16 @@ const withDot =
   (buttonType: ButtonType): string =>
     data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : data.concat(buttonType)
 
-const withEqual =
-  (data: string) =>
-  (buttonType: ButtonType): string =>
-    pipe(
-      buttonType,
-      parseInput(data),
-      O.map(flow(convert, calculate)),
-      O.fromPredicate(A.isNotEmpty),
-      O.map(flow(A.head, String)),
-      O.getWithDefault(data)
-    )
+const withEqual = (data: string): string =>
+  pipe(
+    data,
+    O.map(flow(convert, calculate)),
+    O.fromPredicate(A.isNotEmpty),
+    O.map(flow(A.head, String)),
+    O.getWithDefault(data)
+  )
+
+const withCancel = (): string => ''
 
 /**
  * * button의 입력을 받아서 액션을 실행하는 함숫
@@ -161,6 +135,6 @@ export const handleInput =
       .with(P.union('1', '2', '3', '4', '5', '6', '7', '8', '9'), withNumber(data))
       .with('0', withZero(data))
       .with('.', withDot(data))
-      .with('=', withEqual(data))
-      .with('C', F.always(''))
-      .otherwise(F.always(data.concat(buttonType)))
+      .with('C', withCancel)
+      .with('=', () => withEqual(data))
+      .otherwise(() => data.concat(buttonType))

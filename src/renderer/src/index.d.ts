@@ -11,6 +11,8 @@
  **/
 type OperatorType = 'C' | '%' | '/' | '*' | '-' | '+' | '.' | '='
 
+type PrecedencedOperatorsType = Exclude<OperatorType, '.' | '=' | 'C'>
+
 /**
  * * 숫자 타입
  * * 0: 'NUMBER_0'
