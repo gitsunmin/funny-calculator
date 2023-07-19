@@ -1,9 +1,9 @@
 import { match, P } from 'ts-pattern'
-import { A, O, S, flow, pipe } from '@mobily/ts-belt'
+import { A, F, O, R, S, flow, pipe } from '@mobily/ts-belt'
 import Bigjs from 'big.js'
 
 /** 연산자의 우선순위를 정한 MAP. */
-const operatorsPrecedence: Partial<Record<OperatorType, number>> = {
+const operatorsPrecedence: Record<PrecedencedOperatorsType, number> = {
   '*': 2,
   '/': 2,
   '%': 2,
@@ -22,73 +22,86 @@ const LAST_NUMBER_REGEX = /(\d+\.?\d*)$/g
 /**
  * 중위 표기법으로 입력된 input을 후위 표기법으로 변환하는 함수
  */
-const convert = (input: string): OutputType => {
+const convert = (input: string): readonly (OperatorType | number)[] => {
   /** operator stack */
   const operators: OperatorType[] = []
-  const outputs: OutputType = []
-
-  const convertedInputs = input.split(OPERATORS_REGEX) as string[]
+  const outputs: (OperatorType | number)[] = []
 
   let i = 0
 
+  const convertedInputs = pipe(
+    input,
+    S.splitByRe(OPERATORS_REGEX),
+    A.map(F.ifElse(flow(Number, isNaN), F.identity, Number))
+  ) as (OperatorType | number)[]
+
   while (convertedInputs.length > i) {
-    const token = convertedInputs[i] as ButtonType
+    const isSuccess = match(A.get(convertedInputs, i))
+      .with(P.string, (token) => {
+        const nextOperatorPrecedence = operatorsPrecedence[token] ?? 0
+        const previousOperatorPrecedence = operatorsPrecedence?.[operators.at(-1) ?? ''] ?? 0
+        const isNextHigher = nextOperatorPrecedence > previousOperatorPrecedence
 
-    const isNaN = Number.isNaN(Number(token))
+        if (isNextHigher) operators.push(token)
+        else
+          pipe(
+            operators.pop(),
+            O.fromNullable,
+            O.tap((lastOperator) => outputs.push(lastOperator))
+          )
 
-    if (isNaN) {
-      const operatorToken = token as OperatorType
-      const nextOperatorPrecedence = operatorsPrecedence[token] ?? 0
-      const previousOperatorPrecedence = operatorsPrecedence?.[operators.at(-1) ?? ''] ?? 0
+        return isNextHigher
+      })
+      .with(P.number, (token) => {
+        outputs.push(token)
+        return O.None
+      })
+      .otherwise(F.ignore)
 
-      if (nextOperatorPrecedence > previousOperatorPrecedence) {
-        operators.push(operatorToken)
-      } else {
-        const lastOperator = operators.pop()
-        lastOperator && outputs.push(lastOperator)
-        continue
-      }
-    } else {
-      outputs.push(Number(token))
+    if (isSuccess === O.Some(false)) {
+      continue
     }
+
     i++
   }
 
-  /** 나머지 연산자를 모두 outputs에 넣는다.  */
-  for (let i = 0; i <= operators.length; i++) {
-    const lastOperator = operators.pop()
-    lastOperator && outputs.push(lastOperator)
-  }
-
-  return outputs
+  return pipe(operators, A.reverse, A.concat(A.reverse(outputs)), A.reverse)
 }
 
-const calculate = (outputs: OutputType): OutputType => {
+const calculate = (input: readonly (OperatorType | number)[]): number => {
+  const outputs = [...input]
   let i = 0
+
   /** output에 있는 값을 분석하여 알맞는 연산을 수행한다. */
-  while (outputs.length > 1) {
-    const output = outputs[i]
-    if (typeof output === 'string') {
-      const [leftNumber, rightNumber] = outputs.slice(i - 2, i)
+  while (outputs.length > 1)
+    pipe(
+      outputs[i],
+      O.fromPredicate((output) => typeof output === 'string'),
+      O.toResult(''),
+      R.tap((output) => {
+        const [leftNumber, rightNumber] = outputs.slice(i - 2, i)
 
-      const leftBigNumber = new Bigjs(leftNumber as number)
-      const rightBigNumber = new Bigjs(rightNumber as number)
+        const leftBigNumber = new Bigjs(leftNumber as number)
+        const rightBigNumber = new Bigjs(rightNumber as number)
 
-      const calculate = match(output)
-        .with('+', () => leftBigNumber.plus(rightBigNumber).toNumber())
-        .with('-', () => leftBigNumber.minus(rightBigNumber).toNumber())
-        .with('*', () => leftBigNumber.times(rightBigNumber).toNumber())
-        .with('/', () => leftBigNumber.div(rightBigNumber).toNumber())
-        .with('%', () => leftBigNumber.mod(rightBigNumber).toNumber())
-        .otherwise(() => new Bigjs(0).toNumber())
+        const calculate = match(output)
+          .with('+', () => leftBigNumber.plus(rightBigNumber).toNumber())
+          .with('-', () => leftBigNumber.minus(rightBigNumber).toNumber())
+          .with('*', () => leftBigNumber.times(rightBigNumber).toNumber())
+          .with('/', () => leftBigNumber.div(rightBigNumber).toNumber())
+          .with('%', () => leftBigNumber.mod(rightBigNumber).toNumber())
+          .otherwise(() => new Bigjs(0).toNumber())
 
-      outputs.splice(i - 2, 3, calculate)
+        outputs.splice(i - 2, 3, calculate)
 
-      i = 0
-    } else i++
-  }
+        i = 0
+      }),
+      R.tapError(() => {
+        i++
+      })
+    )
 
-  return outputs
+  return pipe(outputs, A.head, Number)
 }
 
 const withBasicOperators =
@@ -113,14 +126,7 @@ const withDot =
   (buttonType: ButtonType): string =>
     data.match(LAST_NUMBER_REGEX)?.pop()?.includes('.') ?? false ? data : data.concat(buttonType)
 
-const withEqual = (data: string): string =>
-  pipe(
-    data,
-    O.map(flow(convert, calculate)),
-    O.fromPredicate(A.isNotEmpty),
-    O.map(flow(A.head, String)),
-    O.getWithDefault(data)
-  )
+const withEqual = (data: string): string => pipe(data, flow(convert, calculate), String)
 
 const withCancel = (): string => ''
 

@@ -51,7 +51,7 @@ type NumberType = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 type ButtonType = OperatorType | NumberType
 
 /** output의 Type을 정의한다. */
-type OutputType = (ButtonType | number)[]
+type OutputType = (OperatorType | number)[]
 
 /** OperaterStack의 Type을 정의한다. */
 type OperatorsType = ButtonType
